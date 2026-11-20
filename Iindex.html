@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="application-name" content="Cotizador Dafes" />
+  <meta name="description" content="Cotizador Profesional de Bordado Industrial, Estampado DTF y Etiquetas NFC - Comercializadora Dafes" />
+  <title>Cotizador Pro - Bordado, DTF & NFC | Comercializadora Dafes</title>
+
+  <!-- Manifiesto PWA inline vía Data URI para instalación directa -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Cotizador Pro - Comercializadora Dafes","short_name":"Cotizador Dafes","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2740%27 fill=%27%232563eb%27/%3E%3Cpath d=%27M54 64h84v16H54zm0 32h60v16H54zm0 32h84v16H54z%27 fill=%27white%27/%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}' />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Estilos base y prevención de zoom en inputs móviles */
+    html, body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+      font-size: 16px !important; /* Evita zoom automático en iOS/Android */
+    }
+
+    /* Slider táctil personalizado */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 10px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 3px solid #ffffff;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 3px solid #ffffff;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Control de modales seguro sin bloqueos fantasma */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background-color: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    @media (min-width: 640px) {
+      .modal-backdrop {
+        align-items: center;
+        padding: 1rem;
+      }
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    /* Estilos exclusivos de impresión para Vista Cliente / PDF */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #appContainer,
+      #modalTaller,
+      #modalHistorial,
+      #toastContainer,
+      .no-print {
+        display: none !important;
+      }
+      #modalCliente {
+        position: static !important;
+        display: block !important;
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        padding: 0 !important;
+        inset: auto !important;
+      }
+      #clienteModalCard {
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-28 selection:bg-blue-500 selection:text-white">
+
+  <!-- Contenedor de notificaciones Toast -->
+  <div id="toastContainer" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none flex flex-col gap-2 w-11/12 max-w-md"></div>
+
+  <!-- ===================================================================== -->
+  <!-- APLICACIÓN PRINCIPAL                                                  -->
+  <!-- ===================================================================== -->
+  <div id="appContainer" class="max-w-4xl mx-auto">
+
+    <!-- HEADER SUPERIOR FIJO -->
+    <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 px-3 py-3 sm:px-6 shadow-lg">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <!-- Marca + Correlativo -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-900/40">
+            <!-- SVG Inline Aguja/Hilo -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m0-18c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7z" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h1 id="headerTallerNombre" class="text-sm sm:text-base font-bold text-white truncate">Comercializadora Dafes</h1>
+            </div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <input id="cotNumero" type="text" value="COT-001" aria-label="Número de cotización"
+                class="w-24 bg-slate-900 border border-slate-700 text-blue-400 font-mono font-bold text-xs px-2 py-1 rounded-lg focus:outline-none focus:border-blue-500" />
+              <button type="button" id="btnNuevaCot" title="Nueva cotización (incrementar folio)"
+                class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+                + Nueva
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector Moneda + Botones Principales -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <!-- Selector CLP / USD -->
+          <div class="inline-flex rounded-xl bg-slate-900 p-1 border border-slate-800" role="group" aria-label="Selector de moneda">
+            <button type="button" id="btnMonedaCLP"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white">
+              CLP $
+            </button>
+            <button type="button" id="btnMonedaUSD"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+              USD
+            </button>
+          </div>
+
+          <!-- Botón Historial -->
+          <button type="button" id="btnAbrirHistorial"
+            class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
+            title="Ver historial de cotizaciones">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="hidden md:inline text-xs font-semibold">Historial</span>
+          </button>
+
+          <!-- Botón Mi Taller (Muy visible y con listener directo) -->
+          <button type="button" id="btnAbrirTaller"
+            class="px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-950/60 border border-indigo-400/30 transition flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Mi Taller</span>
+          </button>
+
+          <!-- Botón Vista Cliente / PDF -->
+          <button type="button" id="btnAbrirCliente"
+            class="px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 border border-emerald-400/30 transition flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Vista Cliente</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="px-3 py-4 sm:px-6 space-y-5">
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 1: DATOS DEL CLIENTE Y PROYECTO                            -->
+      <!-- ================================================================= -->
+      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm">1</span>
+            <h2 class="text-base sm:text-lg font-bold text-white">Datos del Cliente y Proyecto</h2>
+          </div>
+          <span id="badgeTipoCambio" class="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+            1 USD = $950 CLP
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="clienteNombre" class="block text-xs font-semibold text-slate-300 mb-1">Nombre Cliente / Empresa</label>
+            <input id="clienteNombre" type="text" placeholder="Ej. Constructora Andes SpA"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+          </div>
+
+          <div>
+            <label for="proyectoNombre" class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Proyecto / Prenda</label>
+            <input id="proyectoNombre" type="text" placeholder="Ej. Poleras Piqué Corporativas"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+          </div>
+
+          <div>
+            <label for="cotFecha" class="block text-xs font-semibold text-slate-300 mb-1">Fecha de Cotización</label>
+            <input id="cotFecha" type="date"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500" />
+          </div>
+
+          <div>
+            <label for="costoPrendaBase" class="block text-xs font-semibold text-slate-300 mb-1">
+              Costo Prenda en Blanco (CLP c/u) <span class="text-slate-500 font-normal">(0 si cliente trae)</span>
+            </label>
+            <input id="costoPrendaBase" type="number" min="0" step="100" value="0"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+
+        <!-- Cantidad de Prendas con botones rápidos -->
+        <div class="mt-4 pt-3.5 border-t border-slate-800">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label for="cantidadPrendas" class="block text-xs font-semibold text-slate-300 mb-1">Cantidad Total de Prendas / Unidades</label>
+              <div class="flex items-center gap-2">
+                <button type="button" id="btnRestar1" class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-bold text-lg border border-slate-700">-</button>
+                <input id="cantidadPrendas" type="number" min="1" value="12"
+                  class="w-24 text-center bg-slate-950 border border-blue-500/50 rounded-xl py-2.5 text-white font-bold text-lg focus:outline-none focus:border-blue-500" />
+                <button type="button" id="btnSumar1" class="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-bold text-lg border border-slate-700">+1</button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs text-slate-400 w-full sm:w-auto">Sumar rápido:</span>
+              <button type="button" data-add-qty="5" class="btn-quick-qty px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-blue-600/30 hover:border-blue-500 active:scale-95 text-slate-200 font-semibold text-xs border border-slate-700 transition">+5</button>
+              <button type="button" data-add-qty="10" class="btn-quick-qty px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-blue-600/30 hover:border-blue-500 active:scale-95 text-slate-200 font-semibold text-xs border border-slate-700 transition">+10</button>
+              <button type="button" data-add-qty="50" class="btn-quick-qty px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-blue-600/30 hover:border-blue-500 active:scale-95 text-slate-200 font-semibold text-xs border border-slate-700 transition">+50</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 2: CALCULADORA DE BORDADO INDUSTRIAL                       -->
+      <!-- ================================================================= -->
+      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold text-sm">2</span>
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-white">Bordado Industrial</h2>
+              <p class="text-xs text-slate-400">Hilos, entretela, tiempo máquina y picaje</p>
+            </div>
+          </div>
+
+          <!-- Interruptor Activar/Desactivar Bordado -->
+          <label class="inline-flex items-center cursor-pointer select-none">
+            <input type="checkbox" id="toggleBordado" checked class="sr-only peer" />
+            <div class="relative w-14 h-8 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600 border border-slate-700"></div>
+          </label>
+        </div>
+
+        <div id="panelBordadoBody" class="mt-4 pt-4 border-t border-slate-800 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div>
+              <label for="bordadoPuntadas" class="block text-xs font-semibold text-slate-300 mb-1">Cantidad de Puntadas</label>
+              <input id="bordadoPuntadas" type="number" min="500" step="500" value="12000"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-semibold focus:outline-none focus:border-purple-500" />
+            </div>
+
+            <div>
+              <label for="bordadoColores" class="block text-xs font-semibold text-slate-300 mb-1">N° Colores / Cambios</label>
+              <input id="bordadoColores" type="number" min="1" max="15" value="3"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-semibold focus:outline-none focus:border-purple-500" />
+            </div>
+
+            <div>
+              <label for="bordadoUbicacion" class="block text-xs font-semibold text-slate-300 mb-1">Ubicación / Bastidor</label>
+              <select id="bordadoUbicacion"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500">
+                <option value="Pecho Izquierdo (10x10 cm)">Pecho Izquierdo (10x10 cm)</option>
+                <option value="Espalda Grande (25x25 cm)">Espalda Grande (25x25 cm)</option>
+                <option value="Gorra Frontal / 3D">Gorra Frontal / 3D</option>
+                <option value="Manga / Puño">Manga / Puño</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Opciones Extra Bordado: Puff 3D y Picaje -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <span class="block text-sm font-semibold text-white">Incluir Foamy Puff 3D</span>
+                <span class="block text-xs text-slate-400">Relieve 3mm + ajuste de tensión</span>
+              </div>
+              <input id="bordadoPuff" type="checkbox" class="w-5 h-5 accent-purple-600 rounded" />
+            </label>
+
+            <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <span class="block text-sm font-semibold text-white">Cobrar Picaje / Matriz</span>
+                <span class="block text-xs text-slate-400">Prorrateado entre las prendas</span>
+              </div>
+              <input id="bordadoPicaje" type="checkbox" checked class="w-5 h-5 accent-purple-600 rounded" />
+            </label>
+          </div>
+
+          <!-- Desglose Técnico en Tiempo Real -->
+          <div class="bg-slate-950/90 border border-purple-500/20 rounded-xl p-3.5">
+            <div class="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2.5">Desglose Técnico de Bordado (por prenda / lote)</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400 block">Hilo Superior</span>
+                <strong id="resBordadoHiloSup" class="text-white text-sm block mt-0.5">60 m ($27)</strong>
+              </div>
+              <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400 block">Bobina + Entretela</span>
+                <strong id="resBordadoInsumos" class="text-white text-sm block mt-0.5">$45</strong>
+              </div>
+              <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400 block">Tiempo Máquina</span>
+                <strong id="resBordadoTiempo" class="text-white text-sm block mt-0.5">18.5 min/u</strong>
+              </div>
+              <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                <span class="text-slate-400 block">Costo Operativo</span>
+                <strong id="resBordadoTotalUnit" class="text-purple-400 text-sm block mt-0.5">$2.150 / u</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 3: ESTAMPADO DTF + VISUALIZADOR DE PLANCHA (NESTING)       -->
+      <!-- ================================================================= -->
+      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold text-sm">3</span>
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-white">Estampado DTF & Nesting</h2>
+              <p class="text-xs text-slate-400">Aprovechamiento automático en rollo y planchado</p>
+            </div>
+          </div>
+
+          <!-- Interruptor Activar/Desactivar DTF -->
+          <label class="inline-flex items-center cursor-pointer select-none">
+            <input type="checkbox" id="toggleDTF" class="sr-only peer" />
+            <div class="relative w-14 h-8 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-600 border border-slate-700"></div>
+          </label>
+        </div>
+
+        <div id="panelDTFBody" class="hidden mt-4 pt-4 border-t border-slate-800 space-y-4">
+          <!-- Lista dinámica de diseños DTF -->
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-300">Logos / Diseños por prenda (margen corte 0.5 cm):</span>
+            <button type="button" id="btnAgregarDTF"
+              class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs shadow transition flex items-center gap-1">
+              <span>+ Agregar Diseño DTF</span>
+            </button>
+          </div>
+
+          <div id="listaDisenosDTF" class="space-y-3">
+            <!-- Renderizado dinámicamente por JS -->
+          </div>
+
+          <!-- Métricas de Rollo DTF -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-cyan-500/20">
+            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400 block">Ancho Útil Rollo</span>
+              <strong id="resDTFAnchoRollo" class="text-white text-sm block mt-0.5">58 cm</strong>
+            </div>
+            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400 block">Metros Lineales Pedido</span>
+              <strong id="resDTFMetros" class="text-cyan-400 text-sm block mt-0.5">0.45 m</strong>
+            </div>
+            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400 block">Impresión DTF Total</span>
+              <strong id="resDTFCostoImpresion" class="text-white text-sm block mt-0.5">$6.750</strong>
+            </div>
+            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400 block">Bajada Plancha Total</span>
+              <strong id="resDTFCostoPlancha" class="text-white text-sm block mt-0.5">$4.200</strong>
+            </div>
+          </div>
+
+          <!-- Visualizador Gráfico SVG de Plancha / Nesting -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Vista Previa de Plancha / Nesting (1er Metro)</span>
+              <span id="resDTFEficiencia" class="text-xs text-slate-400">Aprovechamiento: 74%</span>
+            </div>
+            <div class="w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
+              <svg id="svgNestingDTF" viewBox="0 0 580 220" class="w-full h-44 sm:h-52 block" preserveAspectRatio="xMidYMin meet">
+                <!-- Renderizado SVG en vivo -->
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 4: ETIQUETAS NFC INTELIGENTES                              -->
+      <!-- ================================================================= -->
+      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-sm">4</span>
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-white">Etiquetas NFC Lavables</h2>
+              <p class="text-xs text-slate-400">Chips textiles programados interactivos</p>
+            </div>
+          </div>
+
+          <!-- Interruptor Activar/Desactivar NFC -->
+          <label class="inline-flex items-center cursor-pointer select-none">
+            <input type="checkbox" id="toggleNFC" class="sr-only peer" />
+            <div class="relative w-14 h-8 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500 border border-slate-700"></div>
+          </label>
+        </div>
+
+        <div id="panelNFCBody" class="hidden mt-4 pt-4 border-t border-slate-800 space-y-3.5">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div>
+              <label for="nfcCantidadPorPrenda" class="block text-xs font-semibold text-slate-300 mb-1">Chips NFC por Prenda</label>
+              <input id="nfcCantidadPorPrenda" type="number" min="1" max="10" value="1"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-semibold focus:outline-none focus:border-amber-500" />
+            </div>
+
+            <div>
+              <label for="nfcAccion" class="block text-xs font-semibold text-slate-300 mb-1">Acción Programada</label>
+              <select id="nfcAccion"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-amber-500">
+                <option value="Instagram / Redes Sociales">Instagram / Redes Sociales</option>
+                <option value="Sitio Web / Catálogo">Sitio Web / Catálogo</option>
+                <option value="Spotify Playlist">Spotify Playlist</option>
+                <option value="Tarjeta Contacto vCard">Tarjeta Contacto vCard</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="nfcCostoProg" class="block text-xs font-semibold text-slate-300 mb-1">Programación / Termofijado (CLP/u)</label>
+              <input id="nfcCostoProg" type="number" min="0" step="100" value="500"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-semibold focus:outline-none focus:border-amber-500" />
+            </div>
+          </div>
+          <div class="text-xs text-amber-300/90 bg-amber-950/30 border border-amber-500/20 rounded-xl p-3 flex justify-between items-center">
+            <span>Costo total NFC por prenda (tag + aplicación):</span>
+            <strong id="resNFCUnitario" class="text-sm font-bold">$2.000</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 5: RESUMEN FINANCIERO Y MARGEN DE GANANCIA                 -->
+      <!-- ================================================================= -->
+      <section class="bg-gradient-to-b from-slate-900 to-slate-950 border border-blue-500/30 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">$</span>
+            <h2 class="text-base sm:text-lg font-bold text-white">Resumen Financiero & Rentabilidad</h2>
+          </div>
+
+          <!-- Toggle Incluir IVA -->
+          <label class="inline-flex items-center gap-2 cursor-pointer bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+            <input id="toggleIVA" type="checkbox" checked class="w-4 h-4 accent-emerald-500 rounded" />
+            <span id="labelToggleIVA" class="text-xs font-semibold text-slate-200">Incluir IVA (19%)</span>
+          </label>
+        </div>
+
+        <!-- Costos Internos de Producción -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5">
+            <span class="text-xs text-slate-400 block">Costo Neto Unitario</span>
+            <strong id="finCostoUnitario" class="text-lg sm:text-xl font-bold text-slate-200 block mt-0.5">$0</strong>
+          </div>
+          <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5">
+            <span class="text-xs text-slate-400 block">Costo Neto Total Lote</span>
+            <strong id="finCostoTotal" class="text-lg sm:text-xl font-bold text-slate-200 block mt-0.5">$0</strong>
+          </div>
+        </div>
+
+        <!-- Control Deslizante e Input de Margen de Ganancia -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <label for="margenInput" class="text-sm font-bold text-white">Margen de Ganancia (%)</label>
+            <div class="flex items-center gap-1.5">
+              <input id="margenInput" type="number" min="0" max="500" value="50"
+                class="w-20 text-center bg-slate-900 border border-blue-500 rounded-xl py-1.5 text-blue-400 font-bold focus:outline-none" />
+              <span class="text-slate-400 font-bold">%</span>
+            </div>
+          </div>
+
+          <input id="margenSlider" type="range" min="0" max="200" step="5" value="50" class="w-full" />
+
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button type="button" data-margin="30" class="btn-quick-margin flex-1 py-2 rounded-xl bg-slate-800 hover:bg-blue-600/30 border border-slate-700 text-xs font-bold text-slate-200 transition">30%</button>
+            <button type="button" data-margin="50" class="btn-quick-margin flex-1 py-2 rounded-xl bg-blue-600/30 border border-blue-500 text-xs font-bold text-blue-300 transition">50%</button>
+            <button type="button" data-margin="80" class="btn-quick-margin flex-1 py-2 rounded-xl bg-slate-800 hover:bg-blue-600/30 border border-slate-700 text-xs font-bold text-slate-200 transition">80%</button>
+            <button type="button" data-margin="100" class="btn-quick-margin flex-1 py-2 rounded-xl bg-slate-800 hover:bg-blue-600/30 border border-slate-700 text-xs font-bold text-slate-200 transition">100%</button>
+          </div>
+
+          <div class="flex justify-between text-xs pt-1 text-emerald-400">
+            <span>Utilidad Neta Estimada del Pedido:</span>
+            <strong id="finUtilidadTotal" class="font-bold">$0</strong>
+          </div>
+        </div>
+
+        <!-- Precios Finales al Cliente -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5">
+            <span class="text-xs text-slate-400 block">Precio Venta Unit. Neto</span>
+            <strong id="finVentaUnitNeto" class="text-lg font-bold text-white block mt-0.5">$0</strong>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5">
+            <span class="text-xs text-slate-400 block">Precio Venta Unit. Final</span>
+            <strong id="finVentaUnitFinal" class="text-lg font-bold text-blue-400 block mt-0.5">$0</strong>
+          </div>
+          <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5">
+            <span class="text-xs text-emerald-300 block font-semibold">TOTAL COTIZACIÓN</span>
+            <strong id="finTotalFinal" class="text-xl sm:text-2xl font-extrabold text-emerald-400 block mt-0.5">$0</strong>
+            <span id="finDetalleIVA" class="text-[11px] text-emerald-300/80 block mt-0.5">Incluye IVA: $0</span>
+          </div>
+        </div>
+
+        <!-- Acciones Inferiores -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <button type="button" id="btnGuardarHistorial"
+            class="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-98 text-white font-bold text-sm shadow-lg shadow-blue-950/50 transition flex items-center justify-center gap-2 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            <span>Guardar en Historial</span>
+          </button>
+
+          <button type="button" id="btnVistaClienteBottom"
+            class="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-bold text-sm shadow-lg shadow-emerald-950/50 transition flex items-center justify-center gap-2 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <span>Vista Cliente / PDF</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- BARRA INFERIOR STICKY RESUMEN RÁPIDO MÓVIL -->
+    <div class="fixed bottom-0 inset-x-0 z-30 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-4 py-2.5 sm:hidden flex items-center justify-between">
+      <div>
+        <span class="text-[11px] text-slate-400 block">Total Cotización (<span id="stickyQty">12</span> u.)</span>
+        <strong id="stickyTotal" class="text-base font-extrabold text-emerald-400">$0</strong>
+      </div>
+      <div class="text-right">
+        <span class="text-[11px] text-slate-400 block">Unitario Final</span>
+        <strong id="stickyUnit" class="text-sm font-bold text-blue-400">$0</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: CONFIGURACIÓN "MI TALLER"                                    -->
+  <!-- ===================================================================== -->
+  <div id="modalTaller" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tituloModalTaller">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-t-3xl sm:rounded-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Cabecera Modal Mi Taller -->
+      <div class="flex items-center justify-between px-5 py-4 bg-slate-950 border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h3 id="tituloModalTaller" class="text-lg font-bold text-white">Configuración de Mi Taller</h3>
+        </div>
+        <button type="button" id="btnCerrarTaller" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-lg">
+          ✕
+        </button>
+      </div>
+
+      <!-- Cuerpo Scrolleable Mi Taller -->
+      <div class="p-5 overflow-y-auto space-y-6 flex-1">
+        <!-- Datos Identidad Taller -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-3">Identidad del Taller (Aparece en PDF)</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Nombre del Taller / Empresa</label>
+              <input id="cfgTallerNombre" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">RUT / Identificación Tributaria</label>
+              <input id="cfgTallerRut" type="text" placeholder="Ej. 77.123.456-7" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Teléfono / WhatsApp</label>
+              <input id="cfgTallerTelefono" type="text" placeholder="+56 9 1234 5678" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Ciudad / País</label>
+              <input id="cfgTallerCiudad" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs text-slate-300 mb-1">Correo / Instagram</label>
+              <input id="cfgTallerSocial" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs text-slate-300 mb-1">Mensaje Pie de Cotización / Condiciones</label>
+              <textarea id="cfgTallerPie" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Parámetros Técnicos Bordado -->
+        <div class="pt-4 border-t border-slate-800">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">Parámetros Técnicos de Bordado (CLP)</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Cono Hilo Superior 4.000m (CLP)</label>
+              <input id="cfgHiloSup" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Cono Bobina 30.000m (CLP)</label>
+              <input id="cfgHiloBobina" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Metro Entretela / Pelón (CLP)</label>
+              <input id="cfgEntretela" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Valor Hora Máquina Bordadora (CLP/hr)</label>
+              <input id="cfgHoraMaquina" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Velocidad Promedio (Puntadas/min)</label>
+              <input id="cfgVelocidadPPM" type="number" min="100" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Costo Base Picaje / Matriz (CLP)</label>
+              <input id="cfgCostoPicaje" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Parámetros Técnicos DTF y Prensa -->
+        <div class="pt-4 border-t border-slate-800">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3">Parámetros Técnicos DTF y Prensa Térmica</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Ancho Útil Rollo DTF (cm)</label>
+              <input id="cfgDTFAncho" type="number" min="20" max="150" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Costo Metro Lineal DTF (CLP)</label>
+              <input id="cfgDTFMetro" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Bajada Plancha x Prenda (CLP)</label>
+              <input id="cfgDTFPlancha" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Parámetros NFC y Financieros -->
+        <div class="pt-4 border-t border-slate-800">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3">Parámetros NFC y Financieros</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Costo Tag NFC Lavable (CLP)</label>
+              <input id="cfgNFCCosto" type="number" min="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Tipo de Cambio (CLP / 1 USD)</label>
+              <input id="cfgTipoCambio" type="number" min="1" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Porcentaje IVA (%)</label>
+              <input id="cfgIVA" type="number" min="0" max="50" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie Modal Mi Taller -->
+      <div class="px-5 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3 shrink-0">
+        <button type="button" id="btnRestaurarTaller" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700">
+          Restaurar Valores
+        </button>
+        <button type="button" id="btnGuardarTaller" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-sm shadow-lg transition">
+          Guardar Configuración
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: VISTA CLIENTE / PDF FORMAL                                   -->
+  <!-- ===================================================================== -->
+  <div id="modalCliente" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tituloModalCliente">
+    <div id="clienteModalCard" class="bg-white text-slate-900 w-full max-w-3xl rounded-t-3xl sm:rounded-2xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Barra Superior de Acciones (No se imprime) -->
+      <div class="no-print flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-slate-900 text-white border-b border-slate-800 shrink-0">
+        <span id="tituloModalCliente" class="text-sm font-bold">Vista Previa Documento Cliente</span>
+        <div class="flex items-center gap-2">
+          <button type="button" id="btnCopiarWhatsApp"
+            class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 transition">
+            <span>Copiar Resumen WhatsApp</span>
+          </button>
+          <button type="button" id="btnImprimirPDF"
+            class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 transition">
+            <span>Imprimir / PDF</span>
+          </button>
+          <button type="button" id="btnCerrarCliente"
+            class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Documento Formal Limpio -->
+      <div id="documentoClienteBody" class="p-6 sm:p-10 overflow-y-auto space-y-6 bg-white text-slate-900">
+        <!-- Se llena dinámicamente al abrir -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 3: HISTORIAL DE COTIZACIONES                                    -->
+  <!-- ===================================================================== -->
+  <div id="modalHistorial" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tituloModalHistorial">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-xl rounded-t-3xl sm:rounded-2xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 bg-slate-950 border-b border-slate-800 shrink-0">
+        <h3 id="tituloModalHistorial" class="text-lg font-bold text-white">Historial de Cotizaciones</h3>
+        <button type="button" id="btnCerrarHistorial" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold">
+          ✕
+        </button>
+      </div>
+      <div id="listaHistorialBody" class="p-4 overflow-y-auto space-y-3 flex-1">
+        <!-- Renderizado dinámico -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- LÓGICA DE APLICACIÓN (JAVASCRIPT PURO Y AUTOSUFICIENTE)               -->
+  <!-- ===================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // --- 1. CONFIGURACIÓN POR DEFECTO DEL TALLER ---
+      const DEFAULT_CONFIG = {
+        tallerNombre: 'Comercializadora Dafes',
+        tallerRut: '',
+        tallerTelefono: '',
+        tallerCiudad: 'Quilpué, Chile',
+        tallerSocial: '@dafeschile',
+        tallerPie: 'Cotización válida por 15 días. Producción inicia con 50% de abono y aprobación de muestra digital.',
+        // Bordado (CLP)
+        hiloSupCono: 1800,      // 4.000m
+        hiloBobinaCono: 4500,   // 30.000m
+        entretelaMetro: 850,    // 1m lineal
+        horaMaquina: 6500,      // CLP/hr
+        velocidadPPM: 750,      // puntadas/min
+        costoPicaje: 8000,      // CLP base
+        // DTF y Prensa
+        dtfAnchoUtil: 58,       // cm
+        dtfCostoMetro: 15000,   // CLP/m lineal
+        dtfCostoPlancha: 350,   // CLP bajada por prenda
+        // NFC y Financiero
+        nfcCostoTag: 1500,      // CLP/unidad
+        tipoCambio: 950,        // CLP por 1 USD
+        ivaPorcentaje: 19       // 19% Chile
+      };
+
+      const STORAGE_KEYS = {
+        CONFIG: 'dafes_cotizador_config_v2',
+        HISTORY: 'dafes_cotizador_history_v2',
+        COUNTER: 'dafes_cotizador_counter_v2'
+      };
+
+      // --- 2. ESTADO REACTIVO DE LA APLICACIÓN ---
+      let config = loadConfig();
+      let monedaActual = 'CLP'; // 'CLP' | 'USD'
+      let dtfDisenos = [
+        { id: 1, nombre: 'Logo Pecho', ancho: 9, alto: 9, cantPorPrenda: 1 }
+      ];
+      let nextDtfId = 2;
+      let ultimoCalculo = null;
+
+      // --- 3. UTILIDADES DE ALMACENAMIENTO Y FORMATO ---
+      function loadConfig() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.CONFIG);
+          if (raw) {
+            return Object.assign({}, DEFAULT_CONFIG, JSON.parse(raw));
+          }
+        } catch (e) {
+          console.warn('Error leyendo configuración local:', e);
+        }
+        return Object.assign({}, DEFAULT_CONFIG);
+      }
+
+      function saveConfigToStorage(newCfg) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(newCfg));
+        } catch (e) {
+          console.warn('Error guardando configuración:', e);
+        }
+      }
+
+      function formatMoney(montoCLP) {
+        const valor = Number(montoCLP) || 0;
+        if (monedaActual === 'USD') {
+          const tc = Number(config.tipoCambio) || 950;
+          const usd = valor / tc;
+          return 'US$' + usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        return '$' + Math.round(valor).toLocaleString('es-CL');
+      }
+
+      function showToast(mensaje, tipo = 'success') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const toast = document.createElement('div');
+        const bgClass = tipo === 'error'
+          ? 'bg-red-600 border-red-400 text-white'
+          : 'bg-emerald-600 border-emerald-400 text-white';
+        toast.className = `${bgClass} border px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm font-bold text-center transition-all duration-300 opacity-0 translate-y-2`;
+        toast.textContent = mensaje;
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.classList.remove('opacity-0', 'translate-y-2');
+        });
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 2600);
+      }
+
+      // --- 4. GESTIÓN DE MODALES (SIN BLOQUEOS NI OVERLAYS RESIDUALES) ---
+      function openModal(modalId) {
+        const el = document.getElementById(modalId);
+        if (!el) return;
+        el.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeModal(modalId) {
+        const el = document.getElementById(modalId);
+        if (!el) return;
+        el.classList.remove('open');
+        // Restaura scroll solo si no hay otros modales abiertos
+        const anyOpen = document.querySelector('.modal-backdrop.open');
+        if (!anyOpen) {
+          document.body.style.overflow = '';
+        }
+      }
+
+      // --- 5. SINCRONIZACIÓN FORMULARIO "MI TALLER" ---
+      function populateTallerForm() {
+        document.getElementById('cfgTallerNombre').value = config.tallerNombre;
+        document.getElementById('cfgTallerRut').value = config.tallerRut;
+        document.getElementById('cfgTallerTelefono').value = config.tallerTelefono;
+        document.getElementById('cfgTallerCiudad').value = config.tallerCiudad;
+        document.getElementById('cfgTallerSocial').value = config.tallerSocial;
+        document.getElementById('cfgTallerPie').value = config.tallerPie;
+
+        document.getElementById('cfgHiloSup').value = config.hiloSupCono;
+        document.getElementById('cfgHiloBobina').value = config.hiloBobinaCono;
+        document.getElementById('cfgEntretela').value = config.entretelaMetro;
+        document.getElementById('cfgHoraMaquina').value = config.horaMaquina;
+        document.getElementById('cfgVelocidadPPM').value = config.velocidadPPM;
+        document.getElementById('cfgCostoPicaje').value = config.costoPicaje;
+
+        document.getElementById('cfgDTFAncho').value = config.dtfAnchoUtil;
+        document.getElementById('cfgDTFMetro').value = config.dtfCostoMetro;
+        document.getElementById('cfgDTFPlancha').value = config.dtfCostoPlancha;
+
+        document.getElementById('cfgNFCCosto').value = config.nfcCostoTag;
+        document.getElementById('cfgTipoCambio').value = config.tipoCambio;
+        document.getElementById('cfgIVA').value = config.ivaPorcentaje;
+      }
+
+      function readTallerForm() {
+        config.tallerNombre = document.getElementById('cfgTallerNombre').value.trim() || DEFAULT_CONFIG.tallerNombre;
+        config.tallerRut = document.getElementById('cfgTallerRut').value.trim();
+        config.tallerTelefono = document.getElementById('cfgTallerTelefono').value.trim();
+        config.tallerCiudad = document.getElementById('cfgTallerCiudad').value.trim() || DEFAULT_CONFIG.tallerCiudad;
+        config.tallerSocial = document.getElementById('cfgTallerSocial').value.trim();
+        config.tallerPie = document.getElementById('cfgTallerPie').value.trim();
+
+        config.hiloSupCono = Math.max(0, Number(document.getElementById('cfgHiloSup').value) || 0);
+        config.hiloBobinaCono = Math.max(0, Number(document.getElementById('cfgHiloBobina').value) || 0);
+        config.entretelaMetro = Math.max(0, Number(document.getElementById('cfgEntretela').value) || 0);
+        config.horaMaquina = Math.max(0, Number(document.getElementById('cfgHoraMaquina').value) || 0);
+        config.velocidadPPM = Math.max(100, Number(document.getElementById('cfgVelocidadPPM').value) || 750);
+        config.costoPicaje = Math.max(0, Number(document.getElementById('cfgCostoPicaje').value) || 0);
+
+        config.dtfAnchoUtil = Math.max(20, Number(document.getElementById('cfgDTFAncho').value) || 58);
+        config.dtfCostoMetro = Math.max(0, Number(document.getElementById('cfgDTFMetro').value) || 0);
+        config.dtfCostoPlancha = Math.max(0, Number(document.getElementById('cfgDTFPlancha').value) || 0);
+
+        config.nfcCostoTag = Math.max(0, Number(document.getElementById('cfgNFCCosto').value) || 0);
+        config.tipoCambio = Math.max(1, Number(document.getElementById('cfgTipoCambio').value) || 950);
+        config.ivaPorcentaje = Math.max(0, Number(document.getElementById('cfgIVA').value) || 0);
+
+        saveConfigToStorage(config);
+        updateHeaderLabels();
+        recalcularTodo();
+      }
+
+      function updateHeaderLabels() {
+        document.getElementById('headerTallerNombre').textContent = config.tallerNombre;
+        document.getElementById('badgeTipoCambio').textContent = `1 USD = $${Number(config.tipoCambio).toLocaleString('es-CL')} CLP`;
+        document.getElementById('labelToggleIVA').textContent = `Incluir IVA (${config.ivaPorcentaje}%)`;
+      }
+
+      // --- 6. GESTIÓN DE DISEÑOS DTF + NESTING AUTOMÁTICO ---
+      function renderDTFList() {
+        const container = document.getElementById('listaDisenosDTF');
+        if (!container) return;
+        container.innerHTML = '';
+
+        dtfDisenos.forEach((item, index) => {
+          const card = document.createElement('div');
+          card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5';
+          card.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <input type="text" data-dtf-id="${item.id}" data-field="nombre" value="${escapeHtml(item.nombre)}"
+                placeholder="Nombre diseño (ej. Pecho)"
+                class="dtf-input flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-sm font-semibold focus:outline-none focus:border-cyan-500" />
+              ${dtfDisenos.length > 1 ? `
+                <button type="button" data-remove-dtf="${item.id}"
+                  class="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-600 text-red-300 hover:text-white text-xs font-bold border border-red-800/50 transition">
+                  Quitar
+                </button>
+              ` : ''}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Ancho (cm)</label>
+                <input type="number" min="1" max="120" step="0.5" data-dtf-id="${item.id}" data-field="ancho" value="${item.ancho}"
+                  class="dtf-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-sm focus:outline-none focus:border-cyan-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Alto (cm)</label>
+                <input type="number" min="1" max="200" step="0.5" data-dtf-id="${item.id}" data-field="alto" value="${item.alto}"
+                  class="dtf-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-sm focus:outline-none focus:border-cyan-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Cant/Prenda</label>
+                <input type="number" min="1" max="20" step="1" data-dtf-id="${item.id}" data-field="cantPorPrenda" value="${item.cantPorPrenda}"
+                  class="dtf-input w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-sm focus:outline-none focus:border-cyan-500" />
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+        // Asignar eventos directos a inputs y botones generados
+        container.querySelectorAll('.dtf-input').forEach(inp => {
+          inp.addEventListener('input', function () {
+            const id = Number(this.getAttribute('data-dtf-id'));
+            const field = this.getAttribute('data-field');
+            const target = dtfDisenos.find(d => d.id === id);
+            if (!target) return;
+            if (field === 'nombre') {
+              target.nombre = this.value;
+            } else {
+              target[field] = Math.max(0.5, Number(this.value) || 0);
+            }
+            recalcularTodo();
+          });
+        });
+
+        container.querySelectorAll('[data-remove-dtf]').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const id = Number(this.getAttribute('data-remove-dtf'));
+            dtfDisenos = dtfDisenos.filter(d => d.id !== id);
+            renderDTFList();
+            recalcularTodo();
+          });
+        });
+      }
+
+      /**
+       * Algoritmo de Nesting por filas (Shelf Packing) en el ancho útil del rollo DTF
+       * con margen de corte de 0.5 cm entre piezas.
+       */
+      function calcularNestingDTF(cantidadPrendas) {
+        const anchoRollo = Math.max(20, Number(config.dtfAnchoUtil) || 58);
+        const margen = 0.5; // cm de separación de corte
+        const piezas = [];
+        const paleta = ['#06b6d4', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
+
+        dtfDisenos.forEach((d, idx) => {
+          const totalPiezasTipo = Math.max(0, Math.round((Number(d.cantPorPrenda) || 0) * cantidadPrendas));
+          const w = Math.min(anchoRollo, Math.max(1, Number(d.ancho) || 1));
+          const h = Math.max(1, Number(d.alto) || 1);
+          const color = paleta[idx % paleta.length];
+
+          for (let i = 0; i < totalPiezasTipo; i++) {
+            piezas.push({
+              nombre: d.nombre || `Logo ${idx + 1}`,
+              w,
+              h,
+              color
+            });
+          }
+        });
+
+        // Ordenar por alto descendente para optimizar filas
+        piezas.sort((a, b) => b.h - a.h);
+
+        let curX = 0;
+        let curY = 0;
+        let rowHeight = 0;
+        let areaUtilTotal = 0;
+        const colocadas = [];
+
+        piezas.forEach(p => {
+          const reqW = p.w + (curX > 0 ? margen : 0);
+          if (curX + reqW <= anchoRollo) {
+            const posX = curX + (curX > 0 ? margen : 0);
+            colocadas.push({ x: posX, y: curY, w: p.w, h: p.h, color: p.color, nombre: p.nombre });
+            curX = posX + p.w;
+            if (p.h > rowHeight) rowHeight = p.h;
+          } else {
+            // Nueva fila
+            curY += rowHeight + margen;
+            curX = p.w;
+            rowHeight = p.h;
+            colocadas.push({ x: 0, y: curY, w: p.w, h: p.h, color: p.color, nombre: p.nombre });
+          }
+          areaUtilTotal += p.w * p.h;
+        });
+
+        const altoTotalCm = colocadas.length > 0 ? (curY + rowHeight + 1) : 0; // +1cm margen seguridad
+        const metrosLineales = altoTotalCm / 100;
+        const areaRolloConsumida = anchoRollo * altoTotalCm;
+        const eficiencia = areaRolloConsumida > 0 ? Math.min(99, Math.round((areaUtilTotal / areaRolloConsumida) * 100)) : 0;
+
+        renderSVGNesting(anchoRollo, altoTotalCm, colocadas);
+
+        return {
+          anchoRollo,
+          altoTotalCm,
+          metrosLineales,
+          eficiencia,
+          totalPiezas: piezas.length
+        };
+      }
+
+      function renderSVGNesting(anchoRollo, altoTotalCm, colocadas) {
+        const svg = document.getElementById('svgNestingDTF');
+        if (!svg) return;
+
+        // Mostramos hasta los primeros 100 cm (1 metro) en la vista previa
+        const altoVistaCm = Math.max(35, Math.min(100, Math.ceil(altoTotalCm || 35)));
+        const scale = 10; // 1 cm = 10 unidades SVG
+        const vbW = anchoRollo * scale;
+        const vbH = altoVistaCm * scale;
+        svg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+
+        let html = `
+          <defs>
+            <pattern id="gridDTF" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#1e293b" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="${vbW}" height="${vbH}" fill="url(#gridDTF)" />
+        `;
+
+        // Regla superior cada 10 cm
+        for (let cm = 10; cm < anchoRollo; cm += 10) {
+          html += `<line x1="${cm * scale}" y1="0" x2="${cm * scale}" y2="12" stroke="#475569" stroke-width="1.5"/>`;
+          html += `<text x="${cm * scale + 3}" y="11" fill="#64748b" font-size="10" font-family="monospace">${cm}cm</text>`;
+        }
+
+        // Dibujar rectángulos de piezas dentro de los primeros 100 cm
+        colocadas.forEach(item => {
+          if (item.y > altoVistaCm) return;
+          const x = item.x * scale;
+          const y = item.y * scale;
+          const w = item.w * scale;
+          const h = item.h * scale;
+          html += `
+            <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"
+              fill="${item.color}" fill-opacity="0.35" stroke="${item.color}" stroke-width="1.8" />
+          `;
+          if (w >= 45 && h >= 24) {
+            html += `
+              <text x="${x + w / 2}" y="${y + h / 2 + 3}" text-anchor="middle" fill="#f8fafc"
+                font-size="10" font-weight="bold" font-family="sans-serif">${item.w}x${item.h}</text>
+            `;
+          }
+        });
+
+        svg.innerHTML = html;
+      }
+
+      // --- 7. MOTOR PRINCIPAL DE CÁLCULO EN TIEMPO REAL ---
+      function recalcularTodo() {
+        const qty = Math.max(1, Math.round(Number(document.getElementById('cantidadPrendas').value) || 1));
+        const costoPrendaBase = Math.max(0, Number(document.getElementById('costoPrendaBase').value) || 0);
+
+        // --- A. BORDADO ---
+        const bordadoActivo = document.getElementById('toggleBordado').checked;
+        let bordadoCostoUnitNeto = 0;
+        let bordadoDetalleTexto = '';
+
+        if (bordadoActivo) {
+          const puntadas = Math.max(100, Number(document.getElementById('bordadoPuntadas').value) || 0);
+          const colores = Math.max(1, Number(document.getElementById('bordadoColores').value) || 1);
+          const ubicacion = document.getElementById('bordadoUbicacion').value;
+          const puff = document.getElementById('bordadoPuff').checked;
+          const picaje = document.getElementById('bordadoPicaje').checked;
+
+          // Consumo hilo superior: ~5 metros por cada 1.000 puntadas (+15% si es Puff 3D)
+          const metrosHiloSup = (puntadas / 1000) * 5 * (puff ? 1.15 : 1);
+          const costoHiloSup = (metrosHiloSup / 4000) * config.hiloSupCono;
+
+          // Bobina: ~2 metros por cada 1.000 puntadas
+          const metrosBobina = (puntadas / 1000) * 2;
+          const costoBobina = (metrosBobina / 30000) * config.hiloBobinaCono;
+
+          // Entretela + Foamy Puff si aplica (proporcional al área estimada)
+          const factorArea = ubicacion.includes('Espalda') ? 0.35 : 0.14;
+          const costoEntretela = factorArea * config.entretelaMetro;
+          const costoPuffUnit = puff ? 280 : 0;
+
+          // Tiempo máquina: puntadas / velocidad + 1.5 min montaje bastidor + 0.4 min por cambio color
+          const minutosMaquina = (puntadas / config.velocidadPPM) + 1.5 + (colores * 0.4);
+          const costoMaquinaUnit = (minutosMaquina / 60) * config.horaMaquina;
+
+          // Picaje prorrateado
+          const picajeUnit = picaje ? (config.costoPicaje / qty) : 0;
+
+          bordadoCostoUnitNeto = costoHiloSup + costoBobina + costoEntretela + costoPuffUnit + costoMaquinaUnit + picajeUnit;
+
+          document.getElementById('resBordadoHiloSup').textContent = `${metrosHiloSup.toFixed(1)} m (${formatMoney(costoHiloSup)})`;
+          document.getElementById('resBordadoInsumos').textContent = formatMoney(costoBobina + costoEntretela + costoPuffUnit);
+          document.getElementById('resBordadoTiempo').textContent = `${minutosMaquina.toFixed(1)} min/u`;
+          document.getElementById('resBordadoTotalUnit').textContent = `${formatMoney(bordadoCostoUnitNeto)} / u`;
+
+          bordadoDetalleTexto = `Bordado Industrial (${ubicacion}, ${puntadas.toLocaleString('es-CL')} pts, ${colores} col.${puff ? ', Puff 3D' : ''})`;
+        }
+
+        // --- B. DTF ---
+        const dtfActivo = document.getElementById('toggleDTF').checked;
+        let dtfCostoUnitNeto = 0;
+        let dtfDetalleTexto = '';
+
+        if (dtfActivo) {
+          const nesting = calcularNestingDTF(qty);
+          const costoImpresionTotal = nesting.metrosLineales * config.dtfCostoMetro;
+          const totalBajadasPlancha = dtfDisenos.reduce((acc, d) => acc + (Math.max(1, Number(d.cantPorPrenda) || 1) * qty), 0);
+          const costoPlanchaTotal = totalBajadasPlancha * config.dtfCostoPlancha;
+
+          dtfCostoUnitNeto = (costoImpresionTotal + costoPlanchaTotal) / qty;
+
+          document.getElementById('resDTFAnchoRollo').textContent = `${nesting.anchoRollo} cm`;
+          document.getElementById('resDTFMetros').textContent = `${nesting.metrosLineales.toFixed(2)} m`;
+          document.getElementById('resDTFCostoImpresion').textContent = formatMoney(costoImpresionTotal);
+          document.getElementById('resDTFCostoPlancha').textContent = formatMoney(costoPlanchaTotal);
+          document.getElementById('resDTFEficiencia').textContent = `Aprovechamiento: ${nesting.eficiencia}%`;
+
+          const nombresLogos = dtfDisenos.map(d => `${d.nombre} (${d.ancho}x${d.alto}cm)`).join(' + ');
+          dtfDetalleTexto = `Estampado DTF Alta Definición [${nombresLogos}]`;
+        }
+
+        // --- C. NFC ---
+        const nfcActivo = document.getElementById('toggleNFC').checked;
+        let nfcCostoUnitNeto = 0;
+        let nfcDetalleTexto = '';
+
+        if (nfcActivo) {
+          const chipsPorPrenda = Math.max(1, Number(document.getElementById('nfcCantidadPorPrenda').value) || 1);
+          const costoProg = Math.max(0, Number(document.getElementById('nfcCostoProg').value) || 0);
+          const accion = document.getElementById('nfcAccion').value;
+
+          nfcCostoUnitNeto = chipsPorPrenda * (config.nfcCostoTag + costoProg);
+          document.getElementById('resNFCUnitario').textContent = formatMoney(nfcCostoUnitNeto);
+          nfcDetalleTexto = `Etiqueta NFC Lavable (${chipsPorPrenda}x prenda - ${accion})`;
+        }
+
+        // --- D. TOTALES Y MARGEN ---
+        const costoUnitNeto = costoPrendaBase + bordadoCostoUnitNeto + dtfCostoUnitNeto + nfcCostoUnitNeto;
+        const costoTotalNeto = costoUnitNeto * qty;
+
+        const margenPct = Math.max(0, Number(document.getElementById('margenInput').value) || 0);
+        const factorMargen = 1 + (margenPct / 100);
+
+        const ventaUnitNeto = costoUnitNeto * factorMargen;
+        const ventaTotalNeto = ventaUnitNeto * qty;
+        const utilidadTotalNeto = ventaTotalNeto - costoTotalNeto;
+
+        const incluirIVA = document.getElementById('toggleIVA').checked;
+        const tasaIVA = incluirIVA ? (Number(config.ivaPorcentaje) || 0) / 100 : 0;
+
+        const ivaTotal = ventaTotalNeto * tasaIVA;
+        const ventaUnitFinal = ventaUnitNeto * (1 + tasaIVA);
+        const ventaTotalFinal = ventaTotalNeto + ivaTotal;
+
+        // Actualizar UI Financiera
+        document.getElementById('finCostoUnitario').textContent = formatMoney(costoUnitNeto);
+        document.getElementById('finCostoTotal').textContent = formatMoney(costoTotalNeto);
+        document.getElementById('finUtilidadTotal').textContent = formatMoney(utilidadTotalNeto);
+
+        document.getElementById('finVentaUnitNeto').textContent = formatMoney(ventaUnitNeto);
+        document.getElementById('finVentaUnitFinal').textContent = formatMoney(ventaUnitFinal);
+        document.getElementById('finTotalFinal').textContent = formatMoney(ventaTotalFinal);
+        document.getElementById('finDetalleIVA').textContent = incluirIVA
+          ? `Incluye IVA (${config.ivaPorcentaje}%): ${formatMoney(ivaTotal)}`
+          : 'Valores Netos (Exento / Sin IVA)';
+
+        // Barra sticky móvil
+        document.getElementById('stickyQty').textContent = qty;
+        document.getElementById('stickyTotal').textContent = formatMoney(ventaTotalFinal);
+        document.getElementById('stickyUnit').textContent = formatMoney(ventaUnitFinal);
+
+        // Guardar snapshot de cálculo para Vista Cliente / PDF e Historial
+        ultimoCalculo = {
+          numero: document.getElementById('cotNumero').value.trim() || 'COT-001',
+          fecha: document.getElementById('cotFecha').value,
+          cliente: document.getElementById('clienteNombre').value.trim() || 'Cliente General',
+          proyecto: document.getElementById('proyectoNombre').value.trim() || 'Servicio Personalizado',
+          qty,
+          costoPrendaBase,
+          bordadoActivo,
+          bordadoDetalleTexto,
+          bordadoVentaUnitNeto: bordadoCostoUnitNeto * factorMargen,
+          dtfActivo,
+          dtfDetalleTexto,
+          dtfVentaUnitNeto: dtfCostoUnitNeto * factorMargen,
+          nfcActivo,
+          nfcDetalleTexto,
+          nfcVentaUnitNeto: nfcCostoUnitNeto * factorMargen,
+          prendaVentaUnitNeto: costoPrendaBase * factorMargen,
+          ventaUnitNeto,
+          ventaTotalNeto,
+          incluirIVA,
+          ivaPct: config.ivaPorcentaje,
+          ivaTotal,
+          ventaUnitFinal,
+          ventaTotalFinal
+        };
+      }
+
+      // --- 8. VISTA CLIENTE / PDF Y WHATSAPP ---
+      function renderVistaCliente() {
+        recalcularTodo();
+        const c = ultimoCalculo;
+        const body = document.getElementById('documentoClienteBody');
+        if (!body || !c) return;
+
+        // Construir filas de ítems para el cliente (sin mostrar márgenes internos)
+        const filas = [];
+        if (c.costoPrendaBase > 0) {
+          filas.push({
+            desc: `Prenda Base (${c.proyecto})`,
+            unit: c.prendaVentaUnitNeto,
+            sub: c.prendaVentaUnitNeto * c.qty
+          });
+        }
+        if (c.bordadoActivo) {
+          filas.push({
+            desc: c.bordadoDetalleTexto,
+            unit: c.bordadoVentaUnitNeto,
+            sub: c.bordadoVentaUnitNeto * c.qty
+          });
+        }
+        if (c.dtfActivo) {
+          filas.push({
+            desc: c.dtfDetalleTexto,
+            unit: c.dtfVentaUnitNeto,
+            sub: c.dtfVentaUnitNeto * c.qty
+          });
+        }
+        if (c.nfcActivo) {
+          filas.push({
+            desc: c.nfcDetalleTexto,
+            unit: c.nfcVentaUnitNeto,
+            sub: c.nfcVentaUnitNeto * c.qty
+          });
+        }
+        if (filas.length === 0) {
+          filas.push({
+            desc: c.proyecto,
+            unit: c.ventaUnitNeto,
+            sub: c.ventaTotalNeto
+          });
+        }
+
+        const filasHTML = filas.map(f => `
+          <tr class="border-b border-slate-200">
+            <td class="py-3 pr-3 text-sm text-slate-800 font-medium">${escapeHtml(f.desc)}</td>
+            <td class="py-3 px-2 text-sm text-center text-slate-700">${c.qty}</td>
+            <td class="py-3 px-2 text-sm text-right text-slate-700">${formatMoney(f.unit)}</td>
+            <td class="py-3 pl-2 text-sm text-right font-semibold text-slate-900">${formatMoney(f.sub)}</td>
+          </tr>
+        `).join('');
+
+        body.innerHTML = `
+          <!-- Encabezado Empresa -->
+          <div class="flex flex-col sm:flex-row justify-between items-start gap-4 border-b-2 border-slate-900 pb-5">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">${escapeHtml(config.tallerNombre)}</h2>
+              <div class="text-xs text-slate-600 mt-1 space-y-0.5">
+                ${config.tallerRut ? `<p>RUT: ${escapeHtml(config.tallerRut)}</p>` : ''}
+                <p>${escapeHtml(config.tallerCiudad)}</p>
+                <p>${[config.tallerTelefono, config.tallerSocial].filter(Boolean).map(escapeHtml).join(' • ')}</p>
+              </div>
+            </div>
+            <div class="sm:text-right bg-slate-100 px-4 py-3 rounded-xl border border-slate-200 w-full sm:w-auto">
+              <span class="text-xs font-bold uppercase tracking-wider text-blue-700 block">COTIZACIÓN FORMAL</span>
+              <strong class="text-xl font-extrabold text-slate-900 block">${escapeHtml(c.numero)}</strong>
+              <span class="text-xs text-slate-600 block mt-0.5">Fecha: ${escapeHtml(c.fecha)}</span>
+            </div>
+          </div>
+
+          <!-- Datos Cliente -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div>
+              <span class="text-[11px] font-bold uppercase text-slate-500 block">Preparado para:</span>
+              <strong class="text-base text-slate-900 block">${escapeHtml(c.cliente)}</strong>
+            </div>
+            <div>
+              <span class="text-[11px] font-bold uppercase text-slate-500 block">Proyecto / Referencia:</span>
+              <strong class="text-base text-slate-900 block">${escapeHtml(c.proyecto)}</strong>
+            </div>
+          </div>
+
+          <!-- Tabla Detalle -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b-2 border-slate-300 text-xs uppercase text-slate-600">
+                  <th class="py-2 pr-3">Descripción del Servicio</th>
+                  <th class="py-2 px-2 text-center">Cant.</th>
+                  <th class="py-2 px-2 text-right">Unit. Neto</th>
+                  <th class="py-2 pl-2 text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filasHTML}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totales -->
+          <div class="flex justify-end">
+            <div class="w-full sm:w-72 space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div class="flex justify-between text-sm text-slate-700">
+                <span>Subtotal Neto:</span>
+                <strong>${formatMoney(c.ventaTotalNeto)}</strong>
+              </div>
+              ${c.incluirIVA ? `
+                <div class="flex justify-between text-sm text-slate-700">
+                  <span>IVA (${c.ivaPct}%):</span>
+                  <strong>${formatMoney(c.ivaTotal)}</strong>
+                </div>
+              ` : ''}
+              <div class="flex justify-between text-base font-extrabold text-slate-900 border-t border-slate-300 pt-2">
+                <span>TOTAL (${monedaActual}):</span>
+                <span class="text-blue-700">${formatMoney(c.ventaTotalFinal)}</span>
+              </div>
+              <div class="text-right text-xs text-slate-500">
+                Valor unitario final: <strong>${formatMoney(c.ventaUnitFinal)}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pie / Condiciones -->
+          <div class="border-t border-slate-200 pt-4 text-xs text-slate-600">
+            <strong class="text-slate-800 block mb-1">Condiciones Comerciales:</strong>
+            <p>${escapeHtml(config.tallerPie)}</p>
+          </div>
+        `;
+      }
+
+      function copiarResumenWhatsApp() {
+        recalcularTodo();
+        const c = ultimoCalculo;
+        const lineas = [
+          `*${config.tallerNombre.toUpperCase()}*`,
+          `📄 *Cotización:* ${c.numero}`,
+          `👤 *Cliente:* ${c.cliente}`,
+          `🧵 *Proyecto:* ${c.proyecto}`,
+          `📦 *Cantidad:* ${c.qty} unidades`,
+          `-------------------------`
+        ];
+        if (c.bordadoActivo) lineas.push(`✅ ${c.bordadoDetalleTexto}`);
+        if (c.dtfActivo) lineas.push(`✅ ${c.dtfDetalleTexto}`);
+        if (c.nfcActivo) lineas.push(`✅ ${c.nfcDetalleTexto}`);
+        lineas.push(`-------------------------`);
+        lineas.push(`💰 *Valor Unitario:* ${formatMoney(c.ventaUnitFinal)} ${c.incluirIVA ? '(IVA inc.)' : '(Neto)'}`);
+        lineas.push(`💵 *TOTAL PEDIDO:* *${formatMoney(c.ventaTotalFinal)}*`);
+        if (config.tallerPie) lineas.push(`\n_${config.tallerPie}_`);
+
+        const texto = lineas.join('\n');
+        const textarea = document.createElement('textarea');
+        textarea.value = texto;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('Resumen copiado listo para pegar en WhatsApp');
+        } catch (err) {
+          showToast('No se pudo copiar automáticamente', 'error');
+        }
+        document.body.removeChild(textarea);
+      }
+
+      // --- 9. HISTORIAL DE COTIZACIONES ---
+      function guardarEnHistorial() {
+        recalcularTodo();
+        const c = ultimoCalculo;
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.HISTORY);
+          const lista = raw ? JSON.parse(raw) : [];
+          const registro = {
+            id: Date.now(),
+            numero: c.numero,
+            fecha: c.fecha,
+            cliente: c.cliente,
+            proyecto: c.proyecto,
+            qty: c.qty,
+            totalTexto: formatMoney(c.ventaTotalFinal),
+            snapshot: {
+              clienteNombre: document.getElementById('clienteNombre').value,
+              proyectoNombre: document.getElementById('proyectoNombre').value,
+              cotFecha: document.getElementById('cotFecha').value,
+              costoPrendaBase: document.getElementById('costoPrendaBase').value,
+              cantidadPrendas: document.getElementById('cantidadPrendas').value,
+              toggleBordado: document.getElementById('toggleBordado').checked,
+              bordadoPuntadas: document.getElementById('bordadoPuntadas').value,
+              bordadoColores: document.getElementById('bordadoColores').value,
+              bordadoUbicacion: document.getElementById('bordadoUbicacion').value,
+              bordadoPuff: document.getElementById('bordadoPuff').checked,
+              bordadoPicaje: document.getElementById('bordadoPicaje').checked,
+              toggleDTF: document.getElementById('toggleDTF').checked,
+              dtfDisenos: JSON.parse(JSON.stringify(dtfDisenos)),
+              toggleNFC: document.getElementById('toggleNFC').checked,
+              nfcCantidadPorPrenda: document.getElementById('nfcCantidadPorPrenda').value,
+              nfcAccion: document.getElementById('nfcAccion').value,
+              nfcCostoProg: document.getElementById('nfcCostoProg').value,
+              margenInput: document.getElementById('margenInput').value,
+              toggleIVA: document.getElementById('toggleIVA').checked
+            }
+          };
+          lista.unshift(registro);
+          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(lista.slice(0, 40)));
+          showToast(`Cotización ${c.numero} guardada en historial`);
+        } catch (e) {
+          showToast('Error al guardar en historial', 'error');
+        }
+      }
+
+      function renderHistorial() {
+        const body = document.getElementById('listaHistorialBody');
+        if (!body) return;
+        let lista = [];
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.HISTORY);
+          lista = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          lista = [];
+        }
+
+        if (lista.length === 0) {
+          body.innerHTML = `<p class="text-center text-slate-400 text-sm py-8">Aún no hay cotizaciones guardadas en este dispositivo.</p>`;
+          return;
+        }
+
+        body.innerHTML = lista.map(item => `
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded">${escapeHtml(item.numero)}</span>
+                <span class="text-xs text-slate-400">${escapeHtml(item.fecha)}</span>
+              </div>
+              <strong class="text-sm text-white block truncate mt-1">${escapeHtml(item.cliente)} — ${escapeHtml(item.proyecto)}</strong>
+              <span class="text-xs text-emerald-400 font-semibold">${item.qty} u. • Total: ${escapeHtml(item.totalTexto)}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" data-load-hist="${item.id}" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">
+                Cargar
+              </button>
+              <button type="button" data-del-hist="${item.id}" class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white text-xs font-bold">
+                ✕
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        body.querySelectorAll('[data-load-hist]').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const id = Number(this.getAttribute('data-load-hist'));
+            const found = lista.find(x => x.id === id);
+            if (!found || !found.snapshot) return;
+            const s = found.snapshot;
+            document.getElementById('cotNumero').value = found.numero;
+            document.getElementById('clienteNombre').value = s.clienteNombre || '';
+            document.getElementById('proyectoNombre').value = s.proyectoNombre || '';
+            document.getElementById('cotFecha').value = s.cotFecha || '';
+            document.getElementById('costoPrendaBase').value = s.costoPrendaBase || 0;
+            document.getElementById('cantidadPrendas').value = s.cantidadPrendas || 1;
+
+            document.getElementById('toggleBordado').checked = !!s.toggleBordado;
+            document.getElementById('bordadoPuntadas').value = s.bordadoPuntadas || 12000;
+            document.getElementById('bordadoColores').value = s.bordadoColores || 1;
+            document.getElementById('bordadoUbicacion').value = s.bordadoUbicacion || 'Pecho Izquierdo (10x10 cm)';
+            document.getElementById('bordadoPuff').checked = !!s.bordadoPuff;
+            document.getElementById('bordadoPicaje').checked = !!s.bordadoPicaje;
+
+            document.getElementById('toggleDTF').checked = !!s.toggleDTF;
+            dtfDisenos = Array.isArray(s.dtfDisenos) && s.dtfDisenos.length ? s.dtfDisenos : [{ id: 1, nombre: 'Logo Pecho', ancho: 9, alto: 9, cantPorPrenda: 1 }];
+            nextDtfId = dtfDisenos.reduce((m, d) => Math.max(m, d.id), 0) + 1;
+
+            document.getElementById('toggleNFC').checked = !!s.toggleNFC;
+            document.getElementById('nfcCantidadPorPrenda').value = s.nfcCantidadPorPrenda || 1;
+            document.getElementById('nfcAccion').value = s.nfcAccion || 'Instagram / Redes Sociales';
+            document.getElementById('nfcCostoProg').value = s.nfcCostoProg || 500;
+
+            document.getElementById('margenInput').value = s.margenInput || 50;
+            document.getElementById('margenSlider').value = s.margenInput || 50;
+            document.getElementById('toggleIVA').checked = !!s.toggleIVA;
+
+            syncTogglesVisibility();
+            renderDTFList();
+            recalcularTodo();
+            closeModal('modalHistorial');
+            showToast(`Cotización ${found.numero} cargada`);
+          });
+        });
+
+        body.querySelectorAll('[data-del-hist]').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const id = Number(this.getAttribute('data-del-hist'));
+            const filtrada = lista.filter(x => x.id !== id);
+            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(filtrada));
+            renderHistorial();
+          });
+        });
+      }
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      // --- 10. VISIBILIDAD DE PANELES COLAPSABLES ---
+      function syncTogglesVisibility() {
+        const bOn = document.getElementById('toggleBordado').checked;
+        document.getElementById('panelBordadoBody').classList.toggle('hidden', !bOn);
+
+        const dOn = document.getElementById('toggleDTF').checked;
+        document.getElementById('panelDTFBody').classList.toggle('hidden', !dOn);
+
+        const nOn = document.getElementById('toggleNFC').checked;
+        document.getElementById('panelNFCBody').classList.toggle('hidden', !nOn);
+      }
+
+      // --- 11. INICIALIZACIÓN Y EVENTOS TÁCTILES/CLICK ---
+      function init() {
+        // Fecha actual automática
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('cotFecha').value = hoy;
+
+        // Folio correlativo inicial
+        const savedCounter = Number(localStorage.getItem(STORAGE_KEYS.COUNTER)) || 1;
+        document.getElementById('cotNumero').value = 'COT-' + String(savedCounter).padStart(3, '0');
+
+        updateHeaderLabels();
+        renderDTFList();
+        syncTogglesVisibility();
+        recalcularTodo();
+
+        // Botón "+ Nueva" cotización
+        document.getElementById('btnNuevaCot').addEventListener('click', function () {
+          const actual = Number(localStorage.getItem(STORAGE_KEYS.COUNTER)) || 1;
+          const siguiente = actual + 1;
+          localStorage.setItem(STORAGE_KEYS.COUNTER, String(siguiente));
+          document.getElementById('cotNumero').value = 'COT-' + String(siguiente).padStart(3, '0');
+          document.getElementById('clienteNombre').value = '';
+          document.getElementById('proyectoNombre').value = '';
+          recalcularTodo();
+          showToast('Nuevo folio generado: COT-' + String(siguiente).padStart(3, '0'));
+        });
+
+        // Selector Moneda CLP / USD
+        document.getElementById('btnMonedaCLP').addEventListener('click', function () {
+          monedaActual = 'CLP';
+          this.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white';
+          document.getElementById('btnMonedaUSD').className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white';
+          recalcularTodo();
+        });
+
+        document.getElementById('btnMonedaUSD').addEventListener('click', function () {
+          monedaActual = 'USD';
+          this.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition bg-blue-600 text-white';
+          document.getElementById('btnMonedaCLP').className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white';
+          recalcularTodo();
+        });
+
+        // Botones Modales Principales (Mi Taller, Vista Cliente, Historial)
+        document.getElementById('btnAbrirTaller').addEventListener('click', function () {
+          populateTallerForm();
+          openModal('modalTaller');
+        });
+        document.getElementById('btnCerrarTaller').addEventListener('click', () => closeModal('modalTaller'));
+
+        document.getElementById('btnGuardarTaller').addEventListener('click', function () {
+          readTallerForm();
+          closeModal('modalTaller');
+          showToast('Configuración de Mi Taller guardada');
+        });
+
+        document.getElementById('btnRestaurarTaller').addEventListener('click', function () {
+          config = Object.assign({}, DEFAULT_CONFIG);
+          saveConfigToStorage(config);
+          populateTallerForm();
+          updateHeaderLabels();
+          recalcularTodo();
+          showToast('Valores por defecto restaurados');
+        });
+
+        // Vista Cliente / PDF
+        const abrirClienteHandler = function () {
+          renderVistaCliente();
+          openModal('modalCliente');
+        };
+        document.getElementById('btnAbrirCliente').addEventListener('click', abrirClienteHandler);
+        document.getElementById('btnVistaClienteBottom').addEventListener('click', abrirClienteHandler);
+        document.getElementById('btnCerrarCliente').addEventListener('click', () => closeModal('modalCliente'));
+        document.getElementById('btnImprimirPDF').addEventListener('click', () => window.print());
+        document.getElementById('btnCopiarWhatsApp').addEventListener('click', copiarResumenWhatsApp);
+
+        // Historial
+        document.getElementById('btnGuardarHistorial').addEventListener('click', guardarEnHistorial);
+        document.getElementById('btnAbrirHistorial').addEventListener('click', function () {
+          renderHistorial();
+          openModal('modalHistorial');
+        });
+        document.getElementById('btnCerrarHistorial').addEventListener('click', () => closeModal('modalHistorial'));
+
+        // Cerrar modales al tocar el fondo oscuro exterior
+        ['modalTaller', 'modalCliente', 'modalHistorial'].forEach(id => {
+          const backdrop = document.getElementById(id);
+          backdrop.addEventListener('click', function (e) {
+            if (e.target === backdrop) {
+              closeModal(id);
+            }
+          });
+        });
+
+        // Controles de Cantidad de Prendas
+        const qtyInput = document.getElementById('cantidadPrendas');
+        document.getElementById('btnRestar1').addEventListener('click', () => {
+          qtyInput.value = Math.max(1, (Number(qtyInput.value) || 1) - 1);
+          recalcularTodo();
+        });
+        document.getElementById('btnSumar1').addEventListener('click', () => {
+          qtyInput.value = (Number(qtyInput.value) || 0) + 1;
+          recalcularTodo();
+        });
+        document.querySelectorAll('.btn-quick-qty').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const add = Number(this.getAttribute('data-add-qty')) || 0;
+            qtyInput.value = (Number(qtyInput.value) || 0) + add;
+            recalcularTodo();
+          });
+        });
+
+        // Agregar Diseño DTF
+        document.getElementById('btnAgregarDTF').addEventListener('click', function () {
+          dtfDisenos.push({
+            id: nextDtfId++,
+            nombre: `Diseño ${dtfDisenos.length + 1}`,
+            ancho: 10,
+            alto: 10,
+            cantPorPrenda: 1
+          });
+          renderDTFList();
+          recalcularTodo();
+        });
+
+        // Sincronización Margen Slider <-> Input y botones rápidos
+        const margenSlider = document.getElementById('margenSlider');
+        const margenInput = document.getElementById('margenInput');
+
+        margenSlider.addEventListener('input', function () {
+          margenInput.value = this.value;
+          recalcularTodo();
+        });
+        margenInput.addEventListener('input', function () {
+          margenSlider.value = Math.min(200, Math.max(0, Number(this.value) || 0));
+          recalcularTodo();
+        });
+        document.querySelectorAll('.btn-quick-margin').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const m = this.getAttribute('data-margin');
+            margenInput.value = m;
+            margenSlider.value = m;
+            recalcularTodo();
+          });
+        });
+
+        // Toggles de módulos
+        ['toggleBordado', 'toggleDTF', 'toggleNFC'].forEach(id => {
+          document.getElementById(id).addEventListener('change', function () {
+            syncTogglesVisibility();
+            recalcularTodo();
+          });
+        });
+
+        // Recalcular ante cualquier cambio en los inputs generales
+        const liveInputs = [
+          'clienteNombre', 'proyectoNombre', 'cotFecha', 'costoPrendaBase', 'cantidadPrendas',
+          'bordadoPuntadas', 'bordadoColores', 'bordadoUbicacion', 'bordadoPuff', 'bordadoPicaje',
+          'nfcCantidadPorPrenda', 'nfcAccion', 'nfcCostoProg', 'toggleIVA'
+        ];
+        liveInputs.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.addEventListener('input', recalcularTodo);
+            el.addEventListener('change', recalcularTodo);
+          }
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
